@@ -2,54 +2,53 @@
 // http://localhost:3000/isolated/exercise/04.js
 
 import * as React from 'react'
+import useLocalStorageState from '../hooks/useLocalStorageState'
 
 function Board() {
-  // 🐨 squares is the state for this component. Add useState for squares
-  const squares = Array(9).fill(null)
+  const INITIAL_STATE = [Array(9).fill(null)]
+  const [squares, setSquares] = useLocalStorageState('tictactoe', INITIAL_STATE)
+  const [selected, setSelected] = useLocalStorageState('tictactoe-pointer', 0)
+  const [nextValue, setNextValue] = React.useState('X')
+  const [winner, setWinner] = React.useState(null)
+  const [status, setStatus] = React.useState(null)
 
-  // 🐨 We'll need the following bits of derived state:
-  // - nextValue ('X' or 'O')
-  // - winner ('X', 'O', or null)
-  // - status (`Winner: ${winner}`, `Scratch: Cat's game`, or `Next player: ${nextValue}`)
-  // 💰 I've written the calculations for you! So you can use my utilities
-  // below to create these variables
-
-  // This is the function your square click handler will call. `square` should
-  // be an index. So if they click the center square, this will be `4`.
   function selectSquare(square) {
-    // 🐨 first, if there's already winner or there's already a value at the
-    // given square index (like someone clicked a square that's already been
-    // clicked), then return early so we don't make any state changes
-    //
-    // 🦉 It's typically a bad idea to mutate or directly change state in React.
-    // Doing so can lead to subtle bugs that can easily slip into production.
-    //
-    // 🐨 make a copy of the squares array
-    // 💰 `[...squares]` will do it!)
-    //
-    // 🐨 set the value of the square that was selected
-    // 💰 `squaresCopy[square] = nextValue`
-    //
-    // 🐨 set the squares to your copy
+    if (squares[selected][square] || winner) {
+      return
+    }
+    const newSquares =  [...squares[selected]]
+    newSquares[square] = nextValue
+    setSquares([
+      ...squares,
+      newSquares
+    ])
   }
 
   function restart() {
-    // 🐨 reset the squares
-    // 💰 `Array(9).fill(null)` will do it!
+    const newSquares = INITIAL_STATE
+    setSquares(newSquares)
   }
 
   function renderSquare(i) {
     return (
       <button className="square" onClick={() => selectSquare(i)}>
-        {squares[i]}
+        {squares[selected][i]}
       </button>
     )
   }
 
+  React.useEffect(() => {
+    const calculatedWinner = calculateWinner(squares[selected])
+    const newNextValue = calculateNextValue(squares[selected])
+    setNextValue(newNextValue)
+    setWinner(calculatedWinner)
+    const newStatus = calculateStatus(calculatedWinner, squares[selected], newNextValue)
+    setStatus(newStatus)
+  }, [squares, selected])
+
   return (
     <div>
-      {/* 🐨 put the status in the div below */}
-      <div className="status">STATUS</div>
+      <div className="status">{status}</div>
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
@@ -92,14 +91,14 @@ function calculateStatus(winner, squares, nextValue) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function calculateNextValue(squares) {
-  const xSquaresCount = squares.filter(r => r === 'X').length
-  const oSquaresCount = squares.filter(r => r === 'O').length
+function calculateNextValue(squares, selected) {
+  const xSquaresCount = squares[selected].filter(r => r === 'X').length
+  const oSquaresCount = squares[selected].filter(r => r === 'O').length
   return oSquaresCount === xSquaresCount ? 'X' : 'O'
 }
 
 // eslint-disable-next-line no-unused-vars
-function calculateWinner(squares) {
+function calculateWinner(squares, selected) {
   const lines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -112,8 +111,8 @@ function calculateWinner(squares) {
   ]
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i]
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a]
+    if (squares[selected][a] && squares[selected][a] === squares[selected][b] && squares[selected][a] === squares[selected][c]) {
+      return squares[selected][a]
     }
   }
   return null
