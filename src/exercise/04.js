@@ -12,21 +12,39 @@ function Board() {
   const [winner, setWinner] = React.useState(null)
   const [status, setStatus] = React.useState(null)
 
-  function selectSquare(square) {
-    if (squares[selected][square] || winner) {
+  function selectSquare(box) {
+    if (squares[selected][box] || winner) {
       return
     }
-    const newSquares =  [...squares[selected]]
-    newSquares[square] = nextValue
-    setSquares([
-      ...squares,
-      newSquares
-    ])
+    const newStep =  [...squares[selected]]
+    newStep[box] = nextValue
+    if (selected === squares.length - 1) {
+      setSquares([
+        ...squares,
+        newStep
+      ])
+    } else {
+      let newSquares = [];
+      for (let i = 0; i <= selected; i++) {
+        const curStep = [...squares[i]]
+        newSquares = [...newSquares, curStep]
+      }
+      setSquares([
+        ...newSquares,
+        newStep
+      ])
+    }
+    setSelected(selected + 1)
+  }
+
+  function selectStep(step) {
+    setSelected(step)
   }
 
   function restart() {
     const newSquares = INITIAL_STATE
     setSquares(newSquares)
+    setSelected(0)
   }
 
   function renderSquare(i) {
@@ -37,36 +55,59 @@ function Board() {
     )
   }
 
+  function renderBoardHistory(index) {
+    return (
+      <button 
+      onClick={() => selectStep(index)}
+      disabled={index === selected}
+      
+      >
+        {`Go to step ${index}`}
+      </button>
+    )
+  }
+
   React.useEffect(() => {
-    const calculatedWinner = calculateWinner(squares[selected])
-    const newNextValue = calculateNextValue(squares[selected])
+    const calculatedWinner = calculateWinner(squares, selected)
+    const newNextValue = calculateNextValue(squares,selected)
     setNextValue(newNextValue)
     setWinner(calculatedWinner)
-    const newStatus = calculateStatus(calculatedWinner, squares[selected], newNextValue)
+    const newStatus = calculateStatus(calculatedWinner, squares, selected, newNextValue)
     setStatus(newStatus)
   }, [squares, selected])
 
   return (
     <div>
-      <div className="status">{status}</div>
-      <div className="board-row">
-        {renderSquare(0)}
-        {renderSquare(1)}
-        {renderSquare(2)}
+      <div>
+        <div className="board-row">
+          {renderSquare(0)}
+          {renderSquare(1)}
+          {renderSquare(2)}
+        </div>
+        <div className="board-row">
+          {renderSquare(3)}
+          {renderSquare(4)}
+          {renderSquare(5)}
+        </div>
+        <div className="board-row">
+          {renderSquare(6)}
+          {renderSquare(7)}
+          {renderSquare(8)}
+        </div>
       </div>
-      <div className="board-row">
-        {renderSquare(3)}
-        {renderSquare(4)}
-        {renderSquare(5)}
-      </div>
-      <div className="board-row">
-        {renderSquare(6)}
-        {renderSquare(7)}
-        {renderSquare(8)}
-      </div>
-      <button className="restart" onClick={restart}>
+      <div>
+        <div className="status">{status}</div>
+        {
+          squares.map((item, index) => (
+            <div key={item}>
+              {renderBoardHistory(index)}
+            </div>
+          ))
+        }
+        <button className="restart" onClick={restart}>
         restart
       </button>
+      </div>
     </div>
   )
 }
@@ -82,10 +123,10 @@ function Game() {
 }
 
 // eslint-disable-next-line no-unused-vars
-function calculateStatus(winner, squares, nextValue) {
+function calculateStatus(winner, squares, selected, nextValue) {
   return winner
     ? `Winner: ${winner}`
-    : squares.every(Boolean)
+    : squares[selected].every(Boolean)
     ? `Scratch: Cat's game`
     : `Next player: ${nextValue}`
 }
