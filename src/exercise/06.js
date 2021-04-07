@@ -6,35 +6,54 @@ import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript'
 import {fetchPokemon, PokemonInfoFallback, PokemonDataView} from '../pokemon'
 import {PokemonForm} from '../pokemon'
 
+const PokemonStatus = {
+  IDLE: 'idle',
+  PENDING: 'pending',
+  RESOLVED: 'resolved',
+  REJECTED: 'rejected'
+}
+
 function PokemonInfo({pokemonName}) {
-  const [pokemon, setPokemon] = useState(null)
-  const [error, setError] = useState(null)
+  const [status, setStatus] = useState({
+    status: PokemonStatus.IDLE,
+    pokemon: null,
+    error: null
+  })
 
   useEffect(() => {
     if (!pokemonName) {
       return 
     }
     fetchPokemon(pokemonName)
-    .then(pokemonData => setPokemon(pokemonData))
-    .catch(error => setError(error))
+    .then(pokemonData => setStatus({
+        error: null,
+        pokemon: pokemonData,
+        status: PokemonStatus.RESOLVED
+      })
+    )
+    .catch(error => setStatus({
+      error: error,
+      pokemon: null,
+      status: PokemonStatus.REJECTED
+    }))
   }, [pokemonName])
   
-  if (error) {
+  if (status.status === PokemonStatus.REJECTED) {
     return (
       <div role="alert">
-        There was an error: <pre style={{whiteSpace: 'normal'}}>{error.message}</pre>
+        There was an error: <pre style={{whiteSpace: 'normal'}}>{status.error.message}</pre>
       </div>
     )}
 
-  if (!pokemonName) {
+  if (status.status === PokemonStatus.IDLE) {
     return 'Submit a pokemon'
   }
 
-  if (pokemonName && !pokemon) {
+  if (status.status === PokemonStatus.PENDING) {
     return (<PokemonInfoFallback name={pokemonName} />)
   }
 
-  return (<PokemonDataView pokemon={pokemon} />)
+  return (<PokemonDataView pokemon={status.pokemon} />)
 }
 
 function App() {
